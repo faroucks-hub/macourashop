@@ -1,0 +1,11 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {activityReport} from './operations.mjs';
+import {activityPDF,activityWorkbook} from './reports.mjs';
+const dir='/workspace/scratch/macourashop-report-qa';
+await mkdir(dir,{recursive:true});
+const fonts={regular:(await readFile('assets/receipt-sans.ttf')).toString('base64'),bold:(await readFile('assets/receipt-sans-bold.ttf')).toString('base64')};
+const orders=['EUR','XOF'].flatMap(currency=>['Nouvelle','Validée','Préparation','Expédiée','En livraison','Livrée','Annulée','Rejetée'].map((status,i)=>({id:'MC-DEMONSTRATION-'+currency+'-'+i,customer:'Cliente fictive '+i,created:'2026-09-02T14:00:00Z',country:currency==='EUR'?'FR':'CI',zone:currency==='EUR'?'Paris':'Abidjan',currency,status,paid:status==='Livrée'?1:0,subtotal:5000,shipping:500,total:5500,figures:{purchase:1000,transport:200,delivery:300,margin:4000}})));
+const data=activityReport(orders,{from:'2026-09-01',to:'2026-09-30',search:'Démonstration pour contrôle du rapport'},'2026-09-02T14:00:00Z');
+await writeFile(dir+'/report.pdf',new Uint8Array(activityPDF(data,fonts).output('arraybuffer')));
+await writeFile(dir+'/report.xlsx',await activityWorkbook(data).xlsx.writeBuffer());
+console.log(dir);

@@ -1,0 +1,20 @@
+{
+  "name": "Macourashop Gestion",
+  "short_name": "Macoura Gestion",
+  "description": "Centre privé de gestion des commandes, du catalogue, des stocks et des finances Macourashop.",
+  "id": "/admin",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f2ea",
+  "theme_color": "#431326",
+  "orientation": "any",
+  "icons": [
+    {"src":"/assets/gestion-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/assets/gestion-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Commandes","short_name":"Commandes","url":"/admin#orders"},
+    {"name":"Catalogue","short_name":"Catalogue","url":"/admin#products"}
+  ]
+}

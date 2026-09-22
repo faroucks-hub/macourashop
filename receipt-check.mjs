@@ -1,0 +1,10 @@
+import {receiptPDF} from './receipt.mjs';
+import {writeFile,mkdir,readFile} from 'node:fs/promises';
+const fonts={regular:(await readFile('assets/receipt-sans.ttf')).toString('base64'),bold:(await readFile('assets/receipt-sans-bold.ttf')).toString('base64'),logo:'data:image/png;base64,'+(await readFile('assets/macourashop-logo.png')).toString('base64')};
+const dir='/workspace/scratch/macourashop-receipt-qa';
+await mkdir(dir,{recursive:true});
+const o={id:'MC-12345678-1234-1234-1234-123456789012',created:'2026-09-01T10:00:00Z',tracking_code:'1234567890ABCDEF1234567890ABCDEF12',customer:'Cliente de démonstration',phone:'+2250102030405',country:'CI',zone:'Cocody',currency:'XOF',subtotal:35000,shipping:2500,total:37500,status:'Validée',paid:0,demo:1,details:{city:'Abidjan',neighborhood:'Riviera'},lines:[{name:'Robe longue élégante',size:'M',color:'Bordeaux',quantity:1,price:35000}]};
+await writeFile(dir+'/receipt-test.pdf',new Uint8Array(receiptPDF(o,fonts).output('arraybuffer')));
+await writeFile(dir+'/receipt-long-test.pdf',new Uint8Array(receiptPDF({...o,subtotal:1050000,total:1052500,lines:Array.from({length:30},(_,i)=>({...o.lines[0],name:'Article '+(i+1)+' - une description longue pour vérifier le retour à la ligne et les sauts de page'}))},fonts).output('arraybuffer')));
+await writeFile(dir+'/receipt-final-test.pdf',new Uint8Array(receiptPDF({...o,currency:'EUR',subtotal:3500,shipping:500,total:4000,paid:1,status:'Livrée',document_type:'final',events:[{status:'Livrée',created:'2026-09-02T10:00:00Z'}],lines:[{...o.lines[0],price:3500}]},fonts).output('arraybuffer')));
+console.log(dir);
