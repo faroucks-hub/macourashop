@@ -241,3 +241,7 @@ button,a,summary,input,select,textarea{touch-action:manipulation}
  .store-header .brand-image{width:96px;height:34px}
  .store-header .brand-image img{width:102.4px;left:-4.2667px;top:-15.5px}
 }
+
+
+/* Logo recadré : aucun déplacement interne, aucun masque partiel. */
+.store-header .brand-image img,footer .brand-image img{inset:0;width:100%;height:100%;max-width:100%;object-fit:contain}
