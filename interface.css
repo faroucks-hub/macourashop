@@ -53,8 +53,8 @@ header>nav{align-items:center}
 @media(max-width:900px){.mobile-nav .collection-menu summary{font-size:11px;font-weight:650;padding:8px 4px}.mobile-nav .collection-list{position:fixed;top:auto;bottom:calc(70px + env(safe-area-inset-bottom));left:12px;right:12px;width:auto;max-width:none;max-height:min(420px,65dvh)}}
 /* Original supplied artwork, displayed without its surrounding white margins. */
 .brand-logo{flex-shrink:0;letter-spacing:normal}
-.brand-image{position:relative;display:block;width:190px;aspect-ratio:1440/488;overflow:hidden;mix-blend-mode:multiply}
-.brand-image img{position:absolute;display:block;width:106.6667%;max-width:none;height:auto;left:-4.4444%;top:-47.541%;object-fit:contain}
+.brand-image{position:relative;display:block;width:220px;height:72px;overflow:hidden;mix-blend-mode:multiply}
+.brand-image img{position:absolute;display:block;width:234.6667px;max-width:none;height:auto;left:-9.7778px;top:-35px;object-fit:contain}
 footer .brand-image{width:220px}
 .admin aside .admin-brand.brand-logo{width:190px;height:auto;display:block;padding:10px;background:#fff;border:0;border-radius:4px;margin:0 auto 26px}
 .admin-brand .brand-image{width:100%}
@@ -217,4 +217,27 @@ button,a,summary,input,select,textarea{touch-action:manipulation}
  .product-grid,#products{grid-template-columns:1fr}
  .product-img{height:min(112vw,390px)}
  .stats,.stock-kpis,.overview-metrics{grid-template-columns:1fr!important}
+}
+
+
+/* En-tête : le logo horizontal reste entièrement visible à toutes les largeurs. */
+@media(min-width:1151px){
+ .store-top{grid-template-columns:220px minmax(160px,1fr) auto;padding-block:16px}
+ .store-header .brand-image{width:220px}
+}
+@media(max-width:1150px) and (min-width:701px){
+ .store-header .brand-image{width:190px;height:64px}
+ .store-header .brand-image img{width:202.6667px;left:-8.4444px;top:-31px}
+}
+@media(max-width:700px){
+ .store-header .brand-image{height:46px}
+ .store-header .brand-image img{width:138.6667px;left:-5.7778px;top:-21px}
+}
+@media(max-width:370px){
+ .store-header .brand-image{height:40px}
+ .store-header .brand-image img{width:117.3333px;left:-4.8889px;top:-18px}
+}
+@media(max-width:340px){
+ .store-header .brand-image{width:96px;height:34px}
+ .store-header .brand-image img{width:102.4px;left:-4.2667px;top:-15.5px}
 }
