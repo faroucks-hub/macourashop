@@ -751,6 +751,8 @@ test('Comptes clients : cookie sécurisé, identité vérifiée, commandes isol�
  globalThis.fetch=async(url,options)=>{if(String(url).includes('/token?'))return Response.json({access_token:'client-one',expires_in:3600,user:user('one')});if(String(url).endsWith('/user')){const token=options.headers.authorization;return token==='Bearer client-one'?Response.json(user('one')):token==='Bearer client-two'?Response.json(user('two')):Response.json({}, {status:401})}return new Response('{}',{status:200})};
  const call=async(path,method='GET',body,token='client-one',origin=ORIGIN)=>{const res=await worker.fetch(new Request(ORIGIN+path,{method,headers:{origin,cookie:'__Host-macoura-client='+token,...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined}),t.env);return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')}};
  try{
+ assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'1234567'},'')).status,400);
+ assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'123456789012345678901'},'')).status,400);
  const login=await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'');assert.equal(login.status,200);assert.match(login.cookie,/HttpOnly; Secure; SameSite=Lax/);
  assert.equal((await call('/api/admin/data')).status,403);
  const boot=await call('/api/bootstrap');assert.equal(boot.data.admin,false);assert.equal(boot.data.customer.id,'customer:one');
@@ -834,8 +836,8 @@ test('Préparation Vercel : routes, sortie statique et secrets documentés',asyn
  assert.equal(config.outputDirectory,'public');
  assert.equal(pkg.scripts['vercel-build'],'node build.mjs');
  assert.match(api,/async fetch\(request\)/);
- assert.match(api,/d1Database/);assert.match(api,/r2Bucket/);
- for(const key of ['SITE_ORIGIN','ADMIN_EMAIL','CUSTOMER_AUTH_URL','CUSTOMER_AUTH_PUBLIC_KEY','CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_D1_DATABASE_ID','CLOUDFLARE_D1_API_TOKEN','R2_BUCKET_NAME','R2_ACCESS_KEY_ID','R2_SECRET_ACCESS_KEY'])assert.match(env,new RegExp('^'+key+'=','m'),key);
+ assert.match(api,/supabaseDatabase/);assert.match(api,/supabaseBucket/);
+ for(const key of ['SITE_ORIGIN','ADMIN_EMAIL','CUSTOMER_AUTH_URL','CUSTOMER_AUTH_PUBLIC_KEY','SUPABASE_DB_URL','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_STORAGE_BUCKET'])assert.match(env,new RegExp('^'+key+'=','m'),key);
 });
 test('Centre retiré : anciennes routes compatibles, fonctions réunies dans Commandes',async()=>{
  const html=await readFile('index.html','utf8'),source=await readFile('app.js','utf8');assert.doesNotMatch(html,/data-admin="channels"/);assert.match(source,/if\(section==='channels'\)\{section='orders';return renderAdmin\(\)\}/);assert.match(source,/id="orderOrigin"/);assert.match(source,/Accès aux réseaux sociaux/);assert.match(source,/newOrderFromList.*onclick=openSocialOrder/);

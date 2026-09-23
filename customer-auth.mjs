@@ -18,7 +18,7 @@ export async function customerIdentity(req,env){
 }
 function authReply(data,token,age=0){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store'};if(token!==undefined)headers['set-cookie']=AUTH_COOKIE+'='+token+'; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age='+age;return new Response(JSON.stringify(data),{headers})}
 function emailValue(b){const email=String(b.email||'').trim().toLowerCase();if(email.length>254||!/^\S+@\S+\.\S+$/.test(email))throw authError('Indiquez une adresse e-mail valide.');return email}
-function passwordValue(b){if(typeof b.password!=='string'||b.password.length<12||b.password.length>128)throw authError('Utilisez un mot de passe de 12 à 128 caractères.');return b.password}
+function passwordValue(b){if(typeof b.password!=='string'||b.password.length<8||b.password.length>20)throw authError('Utilisez un mot de passe de 8 à 20 caractères.');return b.password}
 async function throttle(req,env,action,email){
  const ip=req.headers.get('cf-connecting-ip')||'unknown';
  for(const [value,max] of [[ip,30],[email||ip,6]]){
