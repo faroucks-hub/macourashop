@@ -814,9 +814,10 @@ test('Réseaux sociaux : icônes accessibles et uniquement pour les liens config
  assert.equal(top.hidden,false);assert.equal(footer.hidden,false);assert.equal(context.footer,context.html);assert.match(context.html,/social-instagram/);assert.match(context.html,/aria-label="Macourashop sur Instagram"/);assert.match(context.html,/social-whatsapp/);assert.match(context.html,/Contacter Macourashop directement sur WhatsApp/);assert.doesNotMatch(context.html,/social-facebook/);assert.equal((context.html.match(/<svg/g)||[]).length,2);
 });
 test('Macourashop Gestion : application installable et accès direct privé',async()=>{
- const manifest=JSON.parse(await readFile('manifest.webmanifest','utf8')),html=await readFile('index.html','utf8'),sw=await readFile('service-worker.js','utf8');
+ const manifest=JSON.parse(await readFile('manifest.webmanifest','utf8')),html=await readFile('index.html','utf8'),sw=await readFile('service-worker.js','utf8'),source=await readFile('app.js','utf8');
  assert.equal(manifest.name,'Macourashop Gestion');assert.equal(manifest.start_url,'/admin');assert.equal(manifest.display,'standalone');assert.ok(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.purpose.includes('maskable')));
  assert.match(html,/rel="manifest" href="\/manifest\.webmanifest"/);assert.match(html,/apple-touch-icon/);assert.match(html,/id="installManagement"/);assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);assert.doesNotMatch(sw,/cache\.addAll|caches\.open/);
+ assert.doesNotMatch(source,/signin-with-chatgpt/);assert.match(source,/next=admin/);
 });
 
 test('Recette mobile : iPhone, Android et très petit écran sont protégés',async()=>{
