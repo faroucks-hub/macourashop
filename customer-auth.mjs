@@ -41,7 +41,7 @@ export async function customerAuthApi(req,env){
  const email=emailValue(b);await throttle(req,env,action,email);
  if(action==='recover'){try{await provider(env,'/recover','POST',{email})}catch(e){if(e.status===429)throw e}return authReply({message:'Si cette adresse correspond à un compte, un e-mail de récupération vous sera envoyé.'})}
  if(action==='signup'){const password=passwordValue(b),name=String(b.name||'').trim();if(name.length<2||name.length>100)throw authError('Indiquez votre nom (2 à 100 caractères).');await provider(env,'/signup','POST',{email,password,data:{name}});return authReply({message:'Consultez votre messagerie pour confirmer votre inscription. Si vous avez déjà un compte, connectez-vous ou réinitialisez votre mot de passe.'})}
- const session=await provider(env,'/token?grant_type=password','POST',{email,password:passwordValue(b)});if(!session.access_token||!session.user?.email_confirmed_at)throw authError('Confirmez votre adresse e-mail avant de vous connecter.');return authReply({ok:true},session.access_token,Math.min(session.expires_in||3600,3600));
+ const session=await provider(env,'/token?grant_type=password','POST',{email,password:passwordValue(b)});if(!session.access_token||!session.user?.email_confirmed_at)throw authError('Confirmez votre adresse e-mail avant de vous connecter.');const admin=!!env.ADMIN_EMAIL&&email===env.ADMIN_EMAIL.trim().toLowerCase();return authReply({ok:true,admin},session.access_token,Math.min(session.expires_in||3600,3600));
  }
  if(action==='verify'){
  await throttle(req,env,action);if(!['signup','recovery'].includes(b.type)||typeof b.token_hash!=='string'||!/^[a-f0-9]{32,128}$/.test(b.token_hash))throw authError('Lien invalide.');

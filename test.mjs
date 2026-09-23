@@ -753,7 +753,7 @@ test('Comptes clients : cookie sécurisé, identité vérifiée, commandes isol�
  try{
  assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'1234567'},'')).status,400);
  assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'123456789012345678901'},'')).status,400);
- const login=await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'');assert.equal(login.status,200);assert.match(login.cookie,/HttpOnly; Secure; SameSite=Lax/);
+ const login=await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'');assert.equal(login.status,200);assert.equal(login.data.admin,false);assert.match(login.cookie,/HttpOnly; Secure; SameSite=Lax/);
  assert.equal((await call('/api/admin/data')).status,403);
  const boot=await call('/api/bootstrap');assert.equal(boot.data.admin,false);assert.equal(boot.data.customer.id,'customer:one');
  const created=await call('/api/orders','POST',order(t.v));assert.equal(created.status,201);assert.equal(created.data.user_id,'customer:one');
@@ -761,7 +761,7 @@ test('Comptes clients : cookie sécurisé, identité vérifiée, commandes isol�
  assert.equal((await call('/api/orders','GET',null,'client-two')).data.orders.length,0);
  assert.equal((await call('/api/orders','GET',null,'invalid')).status,401);
  assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'','https://evil.test')).status,403);
- t.env.ADMIN_EMAIL=' owner@example.test ';delete t.env.VERCEL;
+ t.env.ADMIN_EMAIL=' owner@example.test ';delete t.env.VERCEL;assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'')).data.admin,true);
  assert.equal((await call('/api/bootstrap')).data.admin,true);assert.equal((await call('/api/admin/data')).status,200);
  assert.match((await call('/api/auth/logout','POST',{})).cookie,/Max-Age=0/);
  }finally{globalThis.fetch=original}
