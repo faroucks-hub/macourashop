@@ -819,7 +819,7 @@ test('Macourashop Gestion : application installable et accès direct privé',asy
  const manifest=JSON.parse(await readFile('manifest.webmanifest','utf8')),html=await readFile('index.html','utf8'),sw=await readFile('service-worker.js','utf8'),source=await readFile('app.js','utf8');
  assert.equal(manifest.name,'Macourashop Gestion');assert.equal(manifest.start_url,'/admin');assert.equal(manifest.display,'standalone');assert.ok(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.purpose.includes('maskable')));
  assert.match(html,/rel="manifest" href="\/manifest\.webmanifest"/);assert.match(html,/apple-touch-icon/);assert.match(html,/id="installManagement"/);assert.match(sw,/url\.pathname\.startsWith\('\/api\/'\)/);assert.doesNotMatch(sw,/cache\.addAll|caches\.open/);
- assert.doesNotMatch(source,/signin-with-chatgpt/);assert.match(source,/next=admin/);
+ assert.doesNotMatch(source,/signin-with-chatgpt/);assert.match(source,/function renderAdminLogin/);assert.match(source,/Les comptes clients ne donnent aucun droit de gestion/);assert.match(html,/admin-entry/);
 });
 
 test('Recette mobile : iPhone, Android et très petit écran sont protégés',async()=>{
