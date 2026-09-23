@@ -16,6 +16,7 @@
   "dependencies": {
     "exceljs": "^4.4.0",
     "jspdf": "^4.2.1",
+    "postgres": "^3.4.7",
     "qrcode-generator": "^2.0.4"
   }
 }
