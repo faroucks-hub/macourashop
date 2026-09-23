@@ -18,6 +18,7 @@ function portable(source){
   .replaceAll('INSERT OR IGNORE INTO','INSERT INTO')
   .replaceAll('tracking_limits(id,window,attempts)','tracking_limits(id,"window",attempts)')
   .replaceAll('WHEN window=excluded.window','WHEN tracking_limits."window"=excluded."window"')
+  .replaceAll('THEN attempts+1','THEN tracking_limits.attempts+1')
   .replaceAll(',window=excluded.window',',"window"=excluded."window"');
  if(source.includes('INSERT OR IGNORE INTO'))sql+=' ON CONFLICT DO NOTHING';
  let index=0,out='',quote=false;
