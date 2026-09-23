@@ -746,7 +746,7 @@ test('Comptes clients : service absent explicite et aucune inscription simulée'
  assert.equal((await t.call('/api/auth/signup','POST',{email:'client@example.test',password:'password-long-123',name:'Cliente'},null)).status,503);
 });
 test('Comptes clients : cookie sécurisé, identité vérifiée, commandes isolées et aucun droit gérant',async()=>{
- const t=await ready(),original=globalThis.fetch;t.env.CUSTOMER_AUTH_URL='https://test.supabase.co';t.env.CUSTOMER_AUTH_PUBLIC_KEY='public-test';
+ const t=await ready(),original=globalThis.fetch;t.env.CUSTOMER_AUTH_URL='https://test.supabase.co';t.env.CUSTOMER_AUTH_PUBLIC_KEY='public-test';t.env.ADMIN_EMAIL='admin@example.test';
  const user=id=>({id,email:'owner@example.test',email_confirmed_at:new Date().toISOString(),user_metadata:{name:'Cliente'}});
  globalThis.fetch=async(url,options)=>{if(String(url).includes('/token?'))return Response.json({access_token:'client-one',expires_in:3600,user:user('one')});if(String(url).endsWith('/user')){const token=options.headers.authorization;return token==='Bearer client-one'?Response.json(user('one')):token==='Bearer client-two'?Response.json(user('two')):Response.json({}, {status:401})}return new Response('{}',{status:200})};
  const call=async(path,method='GET',body,token='client-one',origin=ORIGIN)=>{const res=await worker.fetch(new Request(ORIGIN+path,{method,headers:{origin,cookie:'__Host-macoura-client='+token,...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined}),t.env);return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')}};
@@ -761,6 +761,8 @@ test('Comptes clients : cookie sécurisé, identité vérifiée, commandes isol�
  assert.equal((await call('/api/orders','GET',null,'client-two')).data.orders.length,0);
  assert.equal((await call('/api/orders','GET',null,'invalid')).status,401);
  assert.equal((await call('/api/auth/login','POST',{email:'owner@example.test',password:'password-long-123'},'','https://evil.test')).status,403);
+ t.env.ADMIN_EMAIL=' owner@example.test ';delete t.env.VERCEL;
+ assert.equal((await call('/api/bootstrap')).data.admin,true);assert.equal((await call('/api/admin/data')).status,200);
  assert.match((await call('/api/auth/logout','POST',{})).cookie,/Max-Age=0/);
  }finally{globalThis.fetch=original}
 });

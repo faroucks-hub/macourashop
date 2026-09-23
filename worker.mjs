@@ -121,7 +121,7 @@ export async function handleApi(req,env){
  const customer=await customerIdentity(req,env);
  const user=customer?.id||platformUser;
  const email=req.headers.get('oai-authenticated-user-email')||customer?.email||'';
- const admin=!!user&&(!!platformUser||env.VERCEL==='1')&&!!env.ADMIN_EMAIL&&email.toLowerCase()===env.ADMIN_EMAIL.toLowerCase();
+ const admin=!!user&&!!env.ADMIN_EMAIL&&email.toLowerCase()===env.ADMIN_EMAIL.trim().toLowerCase();
  if(!['GET','HEAD'].includes(req.method)&&req.headers.get('origin')!==requestOrigin(req,env))fail('Origine refusée.',403);
  if(path.startsWith('/api/admin/')&&!admin)fail('Accès réservé à l’administrateur.',403);
  if(path==='/api/admin/notifications'&&req.method==='GET'){
