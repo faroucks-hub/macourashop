@@ -1,11 +1,15 @@
 import {build} from 'esbuild';
 import {execFileSync} from 'node:child_process';
-import { cp, mkdir, rm, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, readFile, writeFile, appendFile } from 'node:fs/promises';
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist/assets', { recursive: true });
 const browserModules=['app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs'];
 for (const file of ['index.html','styles.css','interface.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'dist/assets/'+file);
+
+// Logo : ne plus recadrer l'image source par coordonnées fixes. Ce recadrage coupait
+// le haut du logo sur desktop. Le fichier complet reste contenu et centré.
+await appendFile('dist/interface.css',`\n/* Brand artwork: full logo, no destructive crop. */\n.store-header .brand-logo{display:flex;align-items:center;height:72px;overflow:visible}\n.store-header .brand-image{position:relative;width:220px;height:64px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\n.store-header .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\nfooter .brand-image{position:relative;width:230px;height:72px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\nfooter .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\n@media(max-width:1150px){.store-header .brand-logo{height:64px}.store-header .brand-image{width:190px;height:58px}}\n@media(max-width:700px){.store-header .brand-logo{height:48px}.store-header .brand-image{width:130px;height:44px}footer .brand-image{width:200px;height:64px}}\n@media(max-width:370px){.store-header .brand-image{width:110px;height:40px}}\n@media(max-width:340px){.store-header .brand-image{width:96px;height:36px}}\n`);
 
 // Contrôle de session visible dans l'espace gérant.
 {
@@ -21,8 +25,6 @@ for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','ges
  }
 }
 
-// Corrige la transition de connexion AVANT minification. Chercher une chaîne exacte
-// dans le JS déjà minifié est fragile car esbuild peut changer les guillemets/espaces.
 let appSource=await readFile('app.js','utf8');
 const loginRedirect="location.replace('/admin#overview')";
 const loginTransition="await load();if(!state.admin)throw new Error('La session gérant n’a pas pu être confirmée. Réessayez.');history.replaceState(null,'','/admin#overview');await route()";
@@ -30,14 +32,12 @@ if(!appSource.includes(loginRedirect))throw new Error('Admin login redirect not 
 appSource=appSource.replace(loginRedirect,loginTransition);
 await writeFile('dist/app.js',appSource);
 
-// Minifie chaque module séparément tout en conservant exactement son extension source.
 await Promise.all(browserModules.map(async file=>{
   const ext=file.endsWith('.mjs')?'.mjs':'.js';
   const options={outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}};
   if(file==='app.js') await build({...options,stdin:{contents:appSource,sourcefile:'app.js',loader:'js',resolveDir:process.cwd()}});
   else await build({...options,entryPoints:[file]});
 }));
-
 await build({entryPoints:['reports.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/reports.js',minify:true,target:['es2020']});
 await build({entryPoints:['receipt.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/receipt.js',minify:true,target:['es2020']});
 const assets={};
@@ -53,7 +53,6 @@ const worker=(await readFile('worker.mjs','utf8')).replace(/^import \{[^\n]+\} f
 const output=`const STATIC_ASSETS=${JSON.stringify(assets)};\n`+shared+'\n'+commerce+'\n'+operations+'\n'+auth+'\n'+worker;
 execFileSync(process.execPath,['--input-type=module','--check'],{input:output});
 await writeFile('dist/server/index.js',output);
-
 await rm('public',{recursive:true,force:true});
 await mkdir('public/assets',{recursive:true});
 for(const file of ['index.html','styles.css','interface.css','app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs','manifest.webmanifest','service-worker.js'])await cp('dist/'+file,'public/'+file);
