@@ -13,26 +13,44 @@ async function sha1(value){
  return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
-export function isCloudinaryProductImage(url){
- return typeof url==='string'&&/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(url);
+const publicId=key=>'macourashop/products/'+key.slice('products/'.length);
+const deliveryUrl=(env,key)=>{
+ const {cloudName}=config(env);
+ return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/f_auto,q_auto,c_limit,w_1800/${publicId(key)}`;
+};
+
+async function upload(env,key,body,contentType){
+ const {cloudName,apiKey,apiSecret}=config(env),timestamp=Math.floor(Date.now()/1000),id=publicId(key);
+ const signature=await sha1(`overwrite=true&public_id=${id}&timestamp=${timestamp}${apiSecret}`);
+ const form=new FormData();
+ form.set('file',new Blob([body],{type:contentType}));
+ form.set('api_key',apiKey);form.set('timestamp',String(timestamp));form.set('public_id',id);form.set('overwrite','true');form.set('signature',signature);
+ const response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,{method:'POST',body:form});
+ if(!response.ok)throw new Error('Enregistrement Cloudinary impossible.');
 }
 
-export async function uploadProductImage(env,bytes,contentType){
- const {cloudName,apiKey,apiSecret}=config(env);
- const timestamp=Math.floor(Date.now()/1000);
- const folder='macourashop/products';
- const publicId=crypto.randomUUID();
- const signature=await sha1(`folder=${folder}&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
- const form=new FormData();
- form.set('file',new Blob([bytes],{type:contentType}),publicId);
- form.set('api_key',apiKey);
- form.set('timestamp',String(timestamp));
- form.set('folder',folder);
- form.set('public_id',publicId);
- form.set('signature',signature);
- const response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`,{method:'POST',body:form});
- if(!response.ok)throw new Error('Import Cloudinary impossible.');
- const result=await response.json();
- if(!result.secure_url)throw new Error('Réponse Cloudinary invalide.');
- return result.secure_url;
+async function destroy(env,key){
+ const {cloudName,apiKey,apiSecret}=config(env),timestamp=Math.floor(Date.now()/1000),id=publicId(key);
+ const signature=await sha1(`public_id=${id}&timestamp=${timestamp}${apiSecret}`);
+ const form=new FormData();form.set('public_id',id);form.set('timestamp',String(timestamp));form.set('api_key',apiKey);form.set('signature',signature);
+ const response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/destroy`,{method:'POST',body:form});
+ if(!response.ok)throw new Error('Suppression Cloudinary impossible.');
 }
+
+export function productImageBucket(env,privateBucket){return {
+ async get(key){
+  if(!key.startsWith('products/'))return privateBucket.get(key);
+  const response=await fetch(deliveryUrl(env,key));
+  if(response.status===404)return null;
+  if(!response.ok)throw new Error('Lecture Cloudinary impossible.');
+  return {body:response.body,httpMetadata:{contentType:response.headers.get('content-type')||'image/webp'}};
+ },
+ async put(key,body,options={}){
+  if(!key.startsWith('products/'))return privateBucket.put(key,body,options);
+  await upload(env,key,body,options.httpMetadata?.contentType||'image/jpeg');return {};
+ },
+ async delete(key){
+  if(!key.startsWith('products/'))return privateBucket.delete?.(key);
+  await destroy(env,key);return {};
+ }
+};}
