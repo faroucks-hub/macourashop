@@ -21,24 +21,22 @@ for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','ges
  }
 }
 
+// Corrige la transition de connexion AVANT minification. Chercher une chaîne exacte
+// dans le JS déjà minifié est fragile car esbuild peut changer les guillemets/espaces.
+let appSource=await readFile('app.js','utf8');
+const loginRedirect="location.replace('/admin#overview')";
+const loginTransition="await load();if(!state.admin)throw new Error('La session gérant n’a pas pu être confirmée. Réessayez.');history.replaceState(null,'','/admin#overview');await route()";
+if(!appSource.includes(loginRedirect))throw new Error('Admin login redirect not found in app.js source.');
+appSource=appSource.replace(loginRedirect,loginTransition);
+await writeFile('dist/app.js',appSource);
+
 // Minifie chaque module séparément tout en conservant exactement son extension source.
 await Promise.all(browserModules.map(async file=>{
   const ext=file.endsWith('.mjs')?'.mjs':'.js';
-  await build({entryPoints:[file],outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}});
+  const options={outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}};
+  if(file==='app.js') await build({...options,stdin:{contents:appSource,sourcefile:'app.js',loader:'js',resolveDir:process.cwd()}});
+  else await build({...options,entryPoints:[file]});
 }));
-
-// Après une connexion gérant réussie, /admin#overview est une navigation de hash sur
-// la même page : le navigateur ne recharge donc pas le bootstrap tout seul. On recharge
-// explicitement l'état de session avant d'afficher l'administration. Cela supprime le
-// besoin d'actualiser manuellement la page après connexion.
-{
- let app=await readFile('dist/app.js','utf8');
- const old="location.replace('/admin#overview')";
- const replacement="await load();if(!state.admin)throw new Error('La session gérant n’a pas pu être confirmée. Réessayez.');history.replaceState(null,'','/admin#overview');await route()";
- if(!app.includes(old))throw new Error('Admin login redirect not found: login transition cannot be patched safely.');
- app=app.replace(old,replacement);
- await writeFile('dist/app.js',app);
-}
 
 await build({entryPoints:['reports.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/reports.js',minify:true,target:['es2020']});
 await build({entryPoints:['receipt.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/receipt.js',minify:true,target:['es2020']});
