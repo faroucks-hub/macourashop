@@ -6,9 +6,13 @@ await mkdir('dist/assets', { recursive: true });
 const browserModules=['app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs'];
 for (const file of ['index.html','styles.css','interface.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'dist/assets/'+file);
-// Minification sans bundling : les modules restent séparés et le navigateur ne télécharge
-// que les dépendances réellement importées. Les modules lourds rapports/reçus restent lazy.
-await build({entryPoints:browserModules,outdir:'dist',bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020']});
+// Minifie chaque module séparément tout en conservant exactement son extension source.
+// Sans outExtension, esbuild renomme les .mjs en .js, ce qui cassait ensuite la lecture
+// de dist/variants.mjs et les imports navigateur existants.
+await Promise.all(browserModules.map(async file=>{
+  const ext=file.endsWith('.mjs')?'.mjs':'.js';
+  await build({entryPoints:[file],outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}});
+}));
 await build({entryPoints:['reports.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/reports.js',minify:true,target:['es2020']});
 await build({entryPoints:['receipt.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/receipt.js',minify:true,target:['es2020']});
 const assets={};
