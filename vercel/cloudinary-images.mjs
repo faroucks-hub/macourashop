@@ -16,7 +16,7 @@ async function sha1(value){
 const publicId=key=>'macourashop/products/'+key.slice('products/'.length);
 const deliveryUrl=(env,key)=>{
  const {cloudName}=config(env);
- return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/f_auto,q_auto,c_limit,w_1800/${publicId(key)}`;
+ return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/c_limit,w_1800/f_auto/q_auto/${publicId(key)}`;
 };
 
 async function upload(env,key,body,contentType){
