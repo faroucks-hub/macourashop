@@ -7,9 +7,7 @@ const browserModules=['app.js','variants.mjs','commerce.mjs','operations.mjs','s
 for (const file of ['index.html','styles.css','interface.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'dist/assets/'+file);
 
-// Contrôle de session visible dans l'espace gérant. Le backend /api/auth/logout
-// invalide déjà la session Supabase et expire le cookie HttpOnly ; on expose ici
-// cette action sans dupliquer la logique d'authentification dans le navigateur.
+// Contrôle de session visible dans l'espace gérant.
 {
  let html=await readFile('dist/index.html','utf8');
  const anchor='<a href="/#boutique" class="text-link">Voir la boutique ↗</a>';
@@ -28,6 +26,20 @@ await Promise.all(browserModules.map(async file=>{
   const ext=file.endsWith('.mjs')?'.mjs':'.js';
   await build({entryPoints:[file],outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}});
 }));
+
+// Après une connexion gérant réussie, /admin#overview est une navigation de hash sur
+// la même page : le navigateur ne recharge donc pas le bootstrap tout seul. On recharge
+// explicitement l'état de session avant d'afficher l'administration. Cela supprime le
+// besoin d'actualiser manuellement la page après connexion.
+{
+ let app=await readFile('dist/app.js','utf8');
+ const old="location.replace('/admin#overview')";
+ const replacement="await load();if(!state.admin)throw new Error('La session gérant n’a pas pu être confirmée. Réessayez.');history.replaceState(null,'','/admin#overview');await route()";
+ if(!app.includes(old))throw new Error('Admin login redirect not found: login transition cannot be patched safely.');
+ app=app.replace(old,replacement);
+ await writeFile('dist/app.js',app);
+}
+
 await build({entryPoints:['reports.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/reports.js',minify:true,target:['es2020']});
 await build({entryPoints:['receipt.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/receipt.js',minify:true,target:['es2020']});
 const assets={};
@@ -44,7 +56,6 @@ const output=`const STATIC_ASSETS=${JSON.stringify(assets)};\n`+shared+'\n'+comm
 execFileSync(process.execPath,['--input-type=module','--check'],{input:output});
 await writeFile('dist/server/index.js',output);
 
-// Sortie statique Vercel.
 await rm('public',{recursive:true,force:true});
 await mkdir('public/assets',{recursive:true});
 for(const file of ['index.html','styles.css','interface.css','app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs','manifest.webmanifest','service-worker.js'])await cp('dist/'+file,'public/'+file);
