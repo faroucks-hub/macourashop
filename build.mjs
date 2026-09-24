@@ -6,9 +6,24 @@ await mkdir('dist/assets', { recursive: true });
 const browserModules=['app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs'];
 for (const file of ['index.html','styles.css','interface.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'dist/assets/'+file);
+
+// Contrôle de session visible dans l'espace gérant. Le backend /api/auth/logout
+// invalide déjà la session Supabase et expire le cookie HttpOnly ; on expose ici
+// cette action sans dupliquer la logique d'authentification dans le navigateur.
+{
+ let html=await readFile('dist/index.html','utf8');
+ const anchor='<a href="/#boutique" class="text-link">Voir la boutique ↗</a>';
+ if(!html.includes('id="managerLogout"')){
+  if(!html.includes(anchor))throw new Error('Admin header anchor not found: logout control cannot be injected safely.');
+  html=html.replace(anchor,anchor+'<button class="secondary" id="managerLogout" type="button">Se déconnecter</button>');
+  const script=`<script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('managerLogout');if(!b)return;b.addEventListener('click',async()=>{if(b.disabled)return;b.disabled=true;const old=b.textContent;b.textContent='Déconnexion…';try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}',credentials:'same-origin'});if(!r.ok)throw new Error('logout');location.replace('/admin')}catch{b.disabled=false;b.textContent=old;const t=document.getElementById('toast');if(t){t.textContent='Déconnexion impossible. Réessayez.';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4500)}}})})</script>`;
+  if(!html.includes('</body>'))throw new Error('Closing body tag not found.');
+  html=html.replace('</body>',script+'</body>');
+  await writeFile('dist/index.html',html);
+ }
+}
+
 // Minifie chaque module séparément tout en conservant exactement son extension source.
-// Sans outExtension, esbuild renomme les .mjs en .js, ce qui cassait ensuite la lecture
-// de dist/variants.mjs et les imports navigateur existants.
 await Promise.all(browserModules.map(async file=>{
   const ext=file.endsWith('.mjs')?'.mjs':'.js';
   await build({entryPoints:[file],outfile:'dist/'+file,bundle:false,format:'esm',platform:'browser',minify:true,target:['es2020'],outExtension:{'.js':ext}});
@@ -29,7 +44,7 @@ const output=`const STATIC_ASSETS=${JSON.stringify(assets)};\n`+shared+'\n'+comm
 execFileSync(process.execPath,['--input-type=module','--check'],{input:output});
 await writeFile('dist/server/index.js',output);
 
-// Sortie statique Vercel : aucun hébergement historique n'est utilisé.
+// Sortie statique Vercel.
 await rm('public',{recursive:true,force:true});
 await mkdir('public/assets',{recursive:true});
 for(const file of ['index.html','styles.css','interface.css','app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs','manifest.webmanifest','service-worker.js'])await cp('dist/'+file,'public/'+file);
