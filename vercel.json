@@ -19,7 +19,7 @@
       { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
     ] },
     { "source": "/(app.js|variants.mjs|commerce.mjs|operations.mjs|storefront.mjs|product-lifecycle.mjs|styles.css|interface.css)", "headers": [
-      { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=3600" }
     ] },
     { "source": "/index.html", "headers": [
       { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
