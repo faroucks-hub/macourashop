@@ -1,30 +1,3 @@
-/* Hero correction: keep the editorial photograph visible through the full hero.
-   The previous styles.css pseudo-element laid an almost opaque beige gradient over
-   the image, which made the models look cut off below the top strip. */
-.hero:after{
-  background:linear-gradient(90deg,
-    rgba(241,228,210,.30) 0%,
-    rgba(241,228,210,.16) 24%,
-    rgba(241,228,210,.05) 40%,
-    rgba(241,228,210,0) 55%
-  )!important;
-  pointer-events:none;
-}
-
-/* Preserve the reference composition: the photograph itself remains the hero canvas. */
-.hero>img{
-  display:block;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-@media(max-width:900px){
-  .hero:after{
-    background:linear-gradient(0deg,
-      rgba(241,228,210,.56) 0%,
-      rgba(241,228,210,.22) 30%,
-      rgba(241,228,210,0) 58%
-    )!important;
-  }
-}
+/* Intentionally empty.
+   Hero presentation is owned by styles.css only.
+   Kept temporarily because the current build pipeline references this asset. */
