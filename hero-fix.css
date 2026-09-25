@@ -1,6 +1,6 @@
-/* Hero source is a 1672×941 editorial composition. It must be rendered as one
-   full 16:9 canvas; splitting it into a right-hand panel shrinks the models
-   because the source itself already contains the negative space for copy. */
+/* Reference layout: macourashop.faroucks.chatgpt.site desktop capture.
+   The 1672x941 artwork is the full hero canvas. Keep it intact and overlay copy
+   in the source artwork's reserved left-hand negative space. */
 .hero{
   position:relative!important;
   display:block!important;
@@ -19,70 +19,70 @@
   width:100%!important;
   height:100%!important;
   min-height:0!important;
+  max-width:none!important;
   max-height:none!important;
-  object-fit:cover!important;
-  object-position:center center!important;
+  object-fit:contain!important;
+  object-position:center top!important;
   z-index:0!important;
 }
-/* The artwork already provides its own beige negative space: no extra veil. */
 .hero:after{display:none!important;content:none!important}
 .hero-copy{
   position:absolute!important;
-  left:6.7vw!important;
-  top:50%!important;
+  left:7%!important;
+  top:13.5%!important;
   right:auto!important;
   bottom:auto!important;
-  transform:translateY(-50%)!important;
+  transform:none!important;
   z-index:2!important;
-  width:min(42vw,560px)!important;
-  max-width:560px!important;
+  width:36%!important;
+  max-width:620px!important;
   padding:0!important;
 }
-.hero-copy>p:not(.eyebrow){max-width:430px!important}
+.hero-copy .eyebrow{margin:0 0 26px!important}
+.hero h1{
+  font-size:clamp(72px,6.4vw,116px)!important;
+  line-height:.91!important;
+  margin:0 0 36px!important;
+  letter-spacing:-.045em!important;
+}
+.hero-copy>p:not(.eyebrow){
+  max-width:500px!important;
+  font-size:clamp(16px,1.18vw,23px)!important;
+  line-height:1.5!important;
+  margin:0 0 34px!important;
+}
+.hero-copy .primary{padding:17px 28px!important}
 .hero-note{
   position:absolute!important;
-  right:3vw!important;
-  bottom:24px!important;
+  right:4vw!important;
+  bottom:28px!important;
   z-index:3!important;
 }
 @media(max-width:1100px){
-  .hero-copy{left:5vw!important;width:44vw!important}
-  .hero h1{font-size:clamp(48px,6vw,72px)!important}
-  .hero-copy>p:not(.eyebrow){font-size:15px!important;margin:18px 0!important}
+  .hero-copy{left:6%!important;top:12%!important;width:40%!important}
+  .hero h1{font-size:clamp(56px,6.4vw,78px)!important}
+  .hero-copy>p:not(.eyebrow){font-size:15px!important;margin-bottom:24px!important}
 }
 @media(max-width:760px){
-  /* On narrow screens the composition becomes two deliberate blocks: the
-     complete image first, then the copy. This avoids destructive cropping. */
-  .hero{
-    display:flex!important;
-    flex-direction:column!important;
-    aspect-ratio:auto!important;
-    overflow:visible!important;
-  }
+  .hero{aspect-ratio:auto!important;overflow:visible!important;background:#ead7bf!important}
   .hero>img{
     position:relative!important;
     inset:auto!important;
-    order:1!important;
     width:100%!important;
     height:auto!important;
     aspect-ratio:1672/941!important;
     object-fit:contain!important;
-    object-position:center!important;
   }
   .hero-copy{
     position:relative!important;
-    order:2!important;
     left:auto!important;
     top:auto!important;
-    transform:none!important;
     width:100%!important;
     max-width:none!important;
-    padding:34px 6vw 42px!important;
+    padding:32px 6vw 42px!important;
     background:#ead7bf!important;
   }
+  .hero h1{font-size:clamp(48px,14vw,68px)!important;margin-bottom:24px!important}
+  .hero-copy>p:not(.eyebrow){font-size:15px!important}
   .hero-note{display:none!important}
-}
-@media(max-width:560px){
-  .hero-copy{padding:30px 5vw 38px!important}
-  .hero h1{font-size:clamp(44px,14vw,58px)!important}
 }
