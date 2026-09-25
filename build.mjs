@@ -4,16 +4,20 @@ import { cp, mkdir, rm, readFile, writeFile, appendFile } from 'node:fs/promises
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist/assets', { recursive: true });
 const browserModules=['app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs'];
-for (const file of ['index.html','styles.css','interface.css','hero-fix.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
+for (const file of ['index.html','styles.css','interface.css','manifest.webmanifest','service-worker.js']) await cp(file, `dist/${file}`);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'dist/assets/'+file);
 
-// Production visual rules: these are appended to the last stylesheet loaded by the page.
-// Keep source assets intact and control their rendering from one authoritative layer.
-await appendFile('dist/interface.css',`\n/* Brand artwork: full logo, no destructive crop. */\n.store-header .brand-logo{display:flex;align-items:center;height:72px;overflow:visible}\n.store-header .brand-image{position:relative;width:220px;height:64px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\n.store-header .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\nfooter .brand-image{position:relative;width:230px;height:72px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\nfooter .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\n@media(max-width:1150px){.store-header .brand-logo{height:64px}.store-header .brand-image{width:190px;height:58px}}\n@media(max-width:700px){.store-header .brand-logo{height:48px}.store-header .brand-image{width:130px;height:44px}footer .brand-image{width:200px;height:64px}}\n@media(max-width:370px){.store-header .brand-image{width:110px;height:40px}}\n@media(max-width:340px){.store-header .brand-image{width:96px;height:36px}}\n\n/* Hero: the original 1672x941 photograph is the full visual layer.\n   No beige overlay, pseudo-element or separate panel may cover it. */\n.hero{position:relative!important;overflow:hidden!important;background:#dfcbb4!important}\n.hero>img{position:absolute!important;inset:0!important;z-index:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important;object-position:center center!important}\n.hero:before,.hero:after{display:none!important;content:none!important;background:none!important}\n.hero-copy{position:absolute!important;z-index:2!important;background:transparent!important}\n.hero-note{z-index:2!important}\n@media(max-width:900px){.hero>img{object-position:62% center!important}}\n`);
+// One production override layer only: interface.css is loaded after styles.css.
+await appendFile('dist/interface.css',`\n/* Brand artwork */\n.store-header .brand-logo{display:flex;align-items:center;height:72px;overflow:visible}\n.store-header .brand-image{position:relative;width:220px;height:64px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\n.store-header .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\nfooter .brand-image{position:relative;width:230px;height:72px;overflow:visible;display:flex;align-items:center;mix-blend-mode:multiply}\nfooter .brand-image img{position:static!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:contain!important;object-position:left center!important}\n@media(max-width:1150px){.store-header .brand-logo{height:64px}.store-header .brand-image{width:190px;height:58px}}\n@media(max-width:700px){.store-header .brand-logo{height:48px}.store-header .brand-image{width:130px;height:44px}footer .brand-image{width:200px;height:64px}}\n@media(max-width:370px){.store-header .brand-image{width:110px;height:40px}}\n@media(max-width:340px){.store-header .brand-image{width:96px;height:36px}}\n\n/* Hero: one image layer, no overlay/panel. */\n.hero{position:relative!important;overflow:hidden!important;background:#dfcbb4!important}\n.hero>img{position:absolute!important;inset:0!important;z-index:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important;object-position:center center!important}\n.hero:before,.hero:after{display:none!important;content:none!important;background:none!important}\n.hero-copy{position:absolute!important;z-index:2!important;background:transparent!important}\n.hero-note{position:absolute!important;z-index:2!important}\n@media(max-width:900px){.hero>img{object-position:62% center!important}}\n`);
 
-// Contrôle de session visible dans l'espace gérant.
+// Build the final HTML once: load interface.css after styles.css and inject manager logout.
 {
  let html=await readFile('dist/index.html','utf8');
+ if(!html.includes('href="/interface.css"')){
+  const css='<link rel="stylesheet" href="/styles.css">';
+  if(!html.includes(css))throw new Error('styles.css link not found');
+  html=html.replace(css,css+'<link rel="stylesheet" href="/interface.css">');
+ }
  const anchor='<a href="/#boutique" class="text-link">Voir la boutique ↗</a>';
  if(!html.includes('id="managerLogout"')){
   if(!html.includes(anchor))throw new Error('Admin header anchor not found: logout control cannot be injected safely.');
@@ -21,8 +25,8 @@ await appendFile('dist/interface.css',`\n/* Brand artwork: full logo, no destruc
   const script=`<script>document.addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('managerLogout');if(!b)return;b.addEventListener('click',async()=>{if(b.disabled)return;b.disabled=true;const old=b.textContent;b.textContent='Déconnexion…';try{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}',credentials:'same-origin'});if(!r.ok)throw new Error('logout');location.replace('/admin')}catch{b.disabled=false;b.textContent=old;const t=document.getElementById('toast');if(t){t.textContent='Déconnexion impossible. Réessayez.';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4500)}}})})</script>`;
   if(!html.includes('</body>'))throw new Error('Closing body tag not found.');
   html=html.replace('</body>',script+'</body>');
-  await writeFile('dist/index.html',html);
  }
+ await writeFile('dist/index.html',html);
 }
 
 let appSource=await readFile('app.js','utf8');
@@ -41,7 +45,7 @@ await Promise.all(browserModules.map(async file=>{
 await build({entryPoints:['reports.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/reports.js',minify:true,target:['es2020']});
 await build({entryPoints:['receipt.mjs'],bundle:true,format:'esm',platform:'browser',outfile:'dist/receipt.js',minify:true,target:['es2020']});
 const assets={};
-for(const [file,type] of [['index.html','text/html; charset=utf-8'],['styles.css','text/css; charset=utf-8'],['interface.css','text/css; charset=utf-8'],['hero-fix.css','text/css; charset=utf-8'],['app.js','text/javascript; charset=utf-8'],['variants.mjs','text/javascript; charset=utf-8'],['commerce.mjs','text/javascript; charset=utf-8'],['operations.mjs','text/javascript; charset=utf-8'],['storefront.mjs','text/javascript; charset=utf-8'],['product-lifecycle.mjs','text/javascript; charset=utf-8'],['manifest.webmanifest','application/manifest+json'],['service-worker.js','text/javascript; charset=utf-8'],['assets/hero.png','image/png'],['assets/macourashop-logo.png','image/png'],['assets/gestion-icon-180.png','image/png'],['assets/gestion-icon-192.png','image/png'],['assets/gestion-icon-512.png','image/png'],['assets/receipt-sans.ttf','font/ttf'],['assets/receipt-sans-bold.ttf','font/ttf']]) assets['/'+file]={type,data:(await readFile('dist/'+file)).toString('base64')};
+for(const [file,type] of [['index.html','text/html; charset=utf-8'],['styles.css','text/css; charset=utf-8'],['interface.css','text/css; charset=utf-8'],['app.js','text/javascript; charset=utf-8'],['variants.mjs','text/javascript; charset=utf-8'],['commerce.mjs','text/javascript; charset=utf-8'],['operations.mjs','text/javascript; charset=utf-8'],['storefront.mjs','text/javascript; charset=utf-8'],['product-lifecycle.mjs','text/javascript; charset=utf-8'],['manifest.webmanifest','application/manifest+json'],['service-worker.js','text/javascript; charset=utf-8'],['assets/hero.png','image/png'],['assets/macourashop-logo.png','image/png'],['assets/gestion-icon-180.png','image/png'],['assets/gestion-icon-192.png','image/png'],['assets/gestion-icon-512.png','image/png'],['assets/receipt-sans.ttf','font/ttf'],['assets/receipt-sans-bold.ttf','font/ttf']]) assets['/'+file]={type,data:(await readFile('dist/'+file)).toString('base64')};
 assets['/reports.js']={type:'text/javascript; charset=utf-8',data:(await readFile('dist/reports.js')).toString('base64')};
 assets['/receipt.js']={type:'text/javascript; charset=utf-8',data:(await readFile('dist/receipt.js')).toString('base64')};
 await mkdir('dist/server',{recursive:true});
@@ -55,7 +59,7 @@ execFileSync(process.execPath,['--input-type=module','--check'],{input:output});
 await writeFile('dist/server/index.js',output);
 await rm('public',{recursive:true,force:true});
 await mkdir('public/assets',{recursive:true});
-for(const file of ['index.html','styles.css','interface.css','hero-fix.css','app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs','manifest.webmanifest','service-worker.js'])await cp('dist/'+file,'public/'+file);
+for(const file of ['index.html','styles.css','interface.css','app.js','variants.mjs','commerce.mjs','operations.mjs','storefront.mjs','product-lifecycle.mjs','manifest.webmanifest','service-worker.js'])await cp('dist/'+file,'public/'+file);
 for(const file of ['hero.png','macourashop-logo.png','gestion-icon-180.png','gestion-icon-192.png','gestion-icon-512.png','receipt-sans.ttf','receipt-sans-bold.ttf'])await cp('assets/'+file,'public/assets/'+file);
 await cp('dist/reports.js','public/reports.js');
 await cp('dist/receipt.js','public/receipt.js');
