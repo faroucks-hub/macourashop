@@ -11,13 +11,18 @@ async function refreshSession(){
 async function authenticatedApiFetch(request){
  const url=new URL(request.url);
  if(url.pathname==='/api/auth/session'||url.pathname==='/api/auth/login'||url.pathname==='/api/auth/logout')return fetch(request);
+ // Bootstrap determines whether /admin shows the manager workspace or the login screen.
+ // Renew first so an expired access token cannot create a false logout on reload.
+ if(url.pathname==='/api/bootstrap'){
+  await refreshSession();
+  return fetch(request);
+ }
  const retry=request.clone();
  let response=await fetch(request);
  if(response.status!==401&&response.status!==403)return response;
  const refreshed=await refreshSession();
  if(!refreshed)return response;
- response=await fetch(retry);
- return response;
+ return fetch(retry);
 }
 
 self.addEventListener('fetch',event=>{
