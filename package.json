@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "node build.mjs",
-    "vercel-build": "node build.mjs",
+    "build": "node scripts/normalize-production-domain.mjs && node build.mjs",
+    "vercel-build": "node scripts/normalize-production-domain.mjs && node build.mjs",
     "test": "node --test test.mjs",
     "db:generate": "drizzle-kit generate"
   },
